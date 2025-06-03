@@ -1,0 +1,27 @@
+# Prevents Python bytecode clutter
+__pycache__/
+
+# Protects secrets (like OpenAI key)
+.env
+.env.*
+.env-safe
+ 
+# Ignores compiled Python files
+*.pyc 
+
+# IDE-specific settings
+.vscode
+
+# Future-proofing if Node is used
+node_modules/
+
+# Skips built assets from Streamlit
+frontend/dist/
+
+# Skips local virtualenv
+venv/
+backend/venv/
+
+# Catches temp/backup files
+*.orig
+
