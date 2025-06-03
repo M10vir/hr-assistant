@@ -1,6 +1,8 @@
 import fitz  # PyMuPDF
 from docx import Document
 from fastapi import UploadFile
+from io import BytesIO
+import mammoth
 
 async def extract_text_from_file(file: UploadFile) -> str:
     contents = await file.read()
@@ -13,13 +15,8 @@ async def extract_text_from_file(file: UploadFile) -> str:
 
 def extract_text_from_pdf(contents: bytes) -> str:
     with fitz.open(stream=contents, filetype="pdf") as doc:
-        text = ""
-        for page in doc:
-            text += page.get_text()
-        return text
+        return "".join([page.get_text() for page in doc])
 
 def extract_text_from_docx(contents: bytes) -> str:
-    with open("/tmp/temp_resume.docx", "wb") as f:
-        f.write(contents)
-    doc = Document("/tmp/temp_resume.docx")
-    return "\n".join([para.text for para in doc.paragraphs])
+    result = mammoth.extract_raw_text(BytesIO(contents))
+    return result.value.strip() if result.value else ""
