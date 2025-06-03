@@ -15,6 +15,7 @@ fastapi==0.115.12
 filelock==3.18.0
 fsspec==2025.5.1
 h11==0.16.0
+hmmlearn==0.3.3
 idna==3.10
 importlib_metadata==8.7.0
 importlib_resources==6.5.2
@@ -38,6 +39,7 @@ numpy==2.2.6
 openai-whisper==20240930
 packaging==25.0
 preshed==3.0.10
+pyAudioAnalysis==0.3.14
 pydantic==2.11.5
 pydantic_core==2.33.2
 Pygments==2.19.1
@@ -64,6 +66,7 @@ thinc==8.3.6
 threadpoolctl==3.6.0
 tiktoken==0.9.0
 torch==2.7.0
+torchaudio==2.7.0
 tqdm==4.67.1
 typer==0.16.0
 typing-inspection==0.4.1
