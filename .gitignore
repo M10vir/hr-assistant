@@ -26,3 +26,8 @@ backend/venv/
 # Catches temp/backup files
 *.orig
 
+__pycache__/
+*.pyc
+venv/
+*.pyc
+__pycache__/
