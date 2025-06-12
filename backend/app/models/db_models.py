@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime
 from datetime import datetime
 from app.db.database import Base
+from app.models.db_models import ResumeScore
 
 class ResumeScore(Base):
     __tablename__ = "resume_scores"

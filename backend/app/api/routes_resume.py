@@ -45,3 +45,25 @@ async def upload_resume(file: UploadFile = File(...)):
 @router.get("/ping")
 def test_resume_route():
     return {"message": "Resume route is working."}
+
+from fastapi import Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+from app.db.database import get_db
+from app.db.db_models import ResumeScore
+
+@router.get("/scores")
+async def get_all_resume_scores(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(ResumeScore))
+    rows = result.scalars().all()
+    return [
+        {
+            "candidate_name": r.candidate_name,
+            "filename": r.filename,
+            "relevance_score": r.relevance_score,
+            "ats_score": r.ats_score,
+            "readability_score": r.readability_score,
+            "created_at": r.created_at,
+        }
+        for r in rows
+    ]
