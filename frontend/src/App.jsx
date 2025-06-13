@@ -1,6 +1,8 @@
 import React from 'react';
 import InterviewUploader from './components/InterviewUploader';
+import ResumeUploader from './components/ResumeUploader';
 import ResumeScoreDashboard from './components/ResumeScoreDashboard';
+import ResumeRecommendation from './components/ResumeRecommendation';
 
 function App() {
   return (
@@ -12,9 +14,17 @@ function App() {
         <InterviewUploader />
       </section>
 
-      <section>
-        <h2>📄 Resume Scoring Dashboard</h2>
+      <section style={{ marginBottom: '2rem' }}>
+        {/* This title was redundant */}
+        <ResumeUploader />
+      </section>
+
+      <section style={{ marginBottom: '2rem' }}>
         <ResumeScoreDashboard />
+      </section>
+
+      <section>
+        <ResumeRecommendation />
       </section>
     </div>
   );

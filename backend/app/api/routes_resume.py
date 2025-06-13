@@ -50,7 +50,8 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.db.database import get_db
-from app.db.db_models import ResumeScore
+# from app.db.db_models import ResumeScore
+from app.models.db_models import ResumeScore
 
 @router.get("/scores")
 async def get_all_resume_scores(db: AsyncSession = Depends(get_db)):
