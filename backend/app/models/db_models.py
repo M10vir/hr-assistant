@@ -13,4 +13,7 @@ class ResumeScore(Base):
     relevance_score = Column(Float, nullable=False)
     ats_score = Column(Float, nullable=False)
     readability_score = Column(Float, nullable=False)
+    email = Column(String, nullable=True)
+    phone_number = Column(String, nullable=True) 
     created_at = Column(DateTime, default=datetime.utcnow)
+    

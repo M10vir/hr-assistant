@@ -21,7 +21,7 @@ const ResumeUploader = () => {
     formData.append('job_description', jobDescription);
 
     try {
-      const response = await fetch('http://localhost:8000/resume/score', {
+      const response = await fetch('http://localhost:8000/resumes/resume/score', {
         method: 'POST',
         body: formData,
       });

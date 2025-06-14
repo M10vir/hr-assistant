@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 
 const ResumeScoreDashboard = () => {
@@ -19,6 +18,7 @@ const ResumeScoreDashboard = () => {
   }, []);
 
   if (loading) return <p>Loading resume scores...</p>;
+  if (scores.length === 0) return <p>No resume scores available.</p>;
 
   return (
     <div className="resume-score-dashboard">
@@ -31,6 +31,8 @@ const ResumeScoreDashboard = () => {
             <th>Relevance Score</th>
             <th>ATS Score</th>
             <th>Readability Score</th>
+            <th>Email</th>
+            <th>Phone Number</th>
             <th>Created At</th>
           </tr>
         </thead>
@@ -42,6 +44,8 @@ const ResumeScoreDashboard = () => {
               <td>{score.relevance_score}</td>
               <td>{score.ats_score}</td>
               <td>{score.readability_score}</td>
+              <td>{score.email || '—'}</td>
+              <td>{score.phone_number || '—'}</td>
               <td>{new Date(score.created_at).toLocaleString()}</td>
             </tr>
           ))}
