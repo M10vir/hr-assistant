@@ -119,7 +119,7 @@ async def submit_answers(payload: AnswerSubmission, db: AsyncSession = Depends(g
 
     # 📧 Notify HR
     if grand_score_percent >= 80:
-        await send_hr_interview_notification(
+        send_hr_interview_notification(
             candidate_name=payload.candidate_name,
             email=payload.email,
             phone_number=payload.phone_number,
