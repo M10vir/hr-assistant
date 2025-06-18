@@ -1,3 +1,5 @@
+// frontend/src/components/InterviewAssessmentDashboard.jsx
+
 import React, { useEffect, useState } from 'react';
 
 const InterviewAssessmentDashboard = () => {
@@ -26,7 +28,12 @@ const InterviewAssessmentDashboard = () => {
       {submissions.length === 0 ? (
         <p>No submissions found.</p>
       ) : (
-        <table border="1" cellPadding="10" cellSpacing="0" style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <table
+          border="1"
+          cellPadding="10"
+          cellSpacing="0"
+          style={{ width: '100%', borderCollapse: 'collapse' }}
+        >
           <thead>
             <tr>
               <th>Candidate Name</th>
@@ -34,26 +41,47 @@ const InterviewAssessmentDashboard = () => {
               <th>Phone</th>
               <th>Job Title</th>
               <th>Submitted At</th>
-              <th>Answers</th>
+              <th>Answers & Feedback</th>
+              <th>Grand Total</th>
             </tr>
           </thead>
           <tbody>
-            {submissions.map((item, idx) => (
-              <tr key={idx}>
-                <td>{item.candidate_name || "-"}</td>
-                <td>{item.email || "-"}</td>
-                <td>{item.phone_number || "-"}</td>
-                <td>{item.job_title || "-"}</td>
-                <td>{item.submitted_at ? new Date(item.submitted_at).toLocaleString() : "-"}</td>
-                <td>
-                  <ul style={{ paddingLeft: '1.2em' }}>
-                    {(item.answers || []).map((answer, i) => (
-                      <li key={i}>{answer}</li>
-                    ))}
-                  </ul>
-                </td>
-              </tr>
-            ))}
+            {submissions.map((item, idx) => {
+              const feedbackArray = item.feedback || [];
+              const totalScore = feedbackArray.reduce((sum, f) => sum + (f.score || 0), 0);
+              const grandPercent = item.grand_score_percent || 0;
+
+              return (
+                <tr key={idx}>
+                  <td>{item.candidate_name || "-"}</td>
+                  <td>{item.email || "-"}</td>
+                  <td>{item.phone_number || "-"}</td>
+                  <td>{item.job_title || "-"}</td>
+                  <td>
+                    {item.submitted_at
+                      ? new Date(item.submitted_at).toLocaleString()
+                      : "-"}
+                  </td>
+                  <td>
+                    <ul style={{ paddingLeft: '1.2em' }}>
+                      {feedbackArray.map((entry, i) => (
+                        <li key={i}>
+                          <strong>Q{entry.question_number}:</strong> {entry.answer}
+                          <br />
+                          <em><strong>Feedback:</strong> {entry.feedback}</em>
+                          <hr />
+                        </li>
+                      ))}
+                    </ul>
+                  </td>
+                  <td style={{ textAlign: 'center', fontWeight: 'bold' }}>
+                    {totalScore}/30
+                    <br />
+                    ({grandPercent}%)
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       )}
@@ -61,4 +89,4 @@ const InterviewAssessmentDashboard = () => {
   );
 };
 
-export default InterviewAssessmentDashboard;
+export default InterviewAssessmentDashboard; 

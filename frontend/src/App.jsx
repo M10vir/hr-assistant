@@ -4,6 +4,7 @@ import ResumeUploader from './components/ResumeUploader';
 import ResumeScoreDashboard from './components/ResumeScoreDashboard';
 import ResumeRecommendation from './components/ResumeRecommendation';
 import InterviewAssessmentDashboard from './components/InterviewAssessmentDashboard';
+import InterviewAssessmentForm from './components/InterviewAssessmentForm';
 
 function App() {
   return (
@@ -26,6 +27,10 @@ function App() {
 
       <section style={{ marginBottom: '2rem' }}>
         <ResumeRecommendation />
+      </section>
+
+      <section style={{ marginBottom: '2rem' }}>
+        <InterviewAssessmentForm />
       </section>
 
       <section>

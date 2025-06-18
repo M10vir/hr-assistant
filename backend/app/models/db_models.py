@@ -30,4 +30,6 @@ class InterviewSubmission(Base):
     phone_number = Column(Text)
     job_title = Column(String, nullable=False)
     answers = Column(JSONB)
+    feedback = Column(JSONB, nullable=True)
+    grand_score_percent = Column(Float, nullable=True)  # ✅ Must exist
     submitted_at = Column(DateTime, default=datetime.utcnow)
