@@ -1,37 +1,78 @@
 # backend/app/utils/score_resume.py
 
-import random
+import re
+from typing import Dict
 
-def compute_relevance_score(resume_text: str, job_description: str) -> float:
+
+def compute_relevance_score(resume_text: str, job_description: str = "") -> float:
     """
-    Dummy logic: returns a random relevance score (0–100).
-    In production, use real NLP-based similarity models.
+    Compute a basic relevance score between resume and job description (mock logic).
     """
-    return round(random.uniform(70, 100), 2)
+    if not resume_text:
+        return 0.0
+
+    score = 0
+    keywords = ['python', 'aws', 'azure', 'docker', 'kubernetes', 'terraform', 'ci/cd']
+    for keyword in keywords:
+        if keyword.lower() in resume_text.lower():
+            score += 10
+
+    return min(score, 100.0)
+
 
 def compute_ats_score(resume_text: str) -> float:
     """
-    Dummy ATS scoring function: based on presence of common ATS keywords.
+    Compute a mock ATS compatibility score based on formatting indicators.
     """
-    ats_keywords = ['experience', 'skills', 'education', 'certifications', 'projects']
-    score = sum(1 for kw in ats_keywords if kw in resume_text.lower())
-    return round(min(score / len(ats_keywords) * 100, 100), 2)
+    if not resume_text:
+        return 0.0
+
+    score = 100.0
+    if len(resume_text) < 100:
+        score -= 50
+    if not re.search(r'\b(Experience|Skills|Education)\b', resume_text, re.IGNORECASE):
+        score -= 20
+    if resume_text.count("\n") < 5:
+        score -= 15
+
+    return max(score, 0.0)
+
 
 def compute_readability_score(resume_text: str) -> float:
     """
-    Dummy readability scoring: based on average sentence length (simulated).
+    Compute a mock readability score.
     """
+    if not resume_text:
+        return 0.0
+
     words = resume_text.split()
     num_words = len(words)
-    num_sentences = resume_text.count('.') + 1
+    num_sentences = resume_text.count('.') + resume_text.count('\n')
     avg_sentence_length = num_words / max(num_sentences, 1)
 
-    # Ideal sentence length range for readability: 12–18 words
-    if avg_sentence_length < 10:
-        score = 70
-    elif avg_sentence_length > 25:
-        score = 60
+    if avg_sentence_length < 12:
+        return 90.0
+    elif avg_sentence_length < 20:
+        return 75.0
     else:
-        score = 90
+        return 60.0
 
-    return round(score, 2)
+
+def calculate_scores(resume_text: str, job_description: str = "") -> Dict[str, float]:
+    """
+    Calculate and return all scores in a dictionary format.
+    """
+    return {
+        "relevance_score": compute_relevance_score(resume_text, job_description),
+        "ats_score": compute_ats_score(resume_text),
+        "readability_score": compute_readability_score(resume_text),
+    }
+
+
+# Ensure all are exposed to be imported
+__all__ = [
+    "compute_relevance_score",
+    "compute_ats_score",
+    "compute_readability_score",
+    "calculate_scores"
+]

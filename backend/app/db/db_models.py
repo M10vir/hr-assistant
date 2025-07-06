@@ -14,6 +14,9 @@ class ResumeScore(Base):
     ats_score = Column(Float, nullable=False)
     readability_score = Column(Float, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+    # ✅ Add these if they are missing
+    email = Column(String, nullable=True)
+    phone_number = Column(String, nullable=True)
 
 
 class InterviewSubmission(Base):

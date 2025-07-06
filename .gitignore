@@ -4,6 +4,7 @@ __init__/
 
 # Protects secrets (like OpenAI key)
 .env
+*.env
 .env.*
 .env-safe
  
@@ -31,3 +32,11 @@ __pycache__/
 venv/
 *.pyc
 __pycache__/
+
+# Optional placeholder to keep the dir
+backend/logs/*
+!backend/logs/.gitkeep 
+
+# macOS system files
+.DS_Store
+**/.DS_Store

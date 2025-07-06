@@ -1,21 +1,41 @@
-import textract
-import tempfile
+# backend/app/utils/extract_text.py
+
 import os
+import logging
+import io
+import textract
+from docx import Document
+from PyPDF2 import PdfReader
 
-def extract_text_from_file(filename: str, contents: bytes) -> str:
+logger = logging.getLogger(__name__)
+
+def extract_text_from_file(filename: str, file_bytes: bytes) -> str:
     """
-    Extracts text from in-memory uploaded resume file using textract.
-    Writes to a temporary file before processing.
+    Extract text content from a PDF or DOCX file from raw bytes.
+    Returns extracted text as a string.
     """
+    ext = os.path.splitext(filename)[1].lower()
+    logger.info(f"[extract_text] Processing file: {filename} | Extension: {ext}")
+
     try:
-        suffix = os.path.splitext(filename)[-1]
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp_file:
-            tmp_file.write(contents)
-            tmp_path = tmp_file.name
+        if ext == ".pdf":
+            with io.BytesIO(file_bytes) as pdf_io:
+                reader = PdfReader(pdf_io)
+                text = ""
+                for page in reader.pages:
+                    text += page.extract_text() or ""
+                return text.strip()
 
-        text = textract.process(tmp_path).decode("utf-8")
-        os.unlink(tmp_path)  # cleanup
-        return text
+        elif ext == ".docx":
+            with io.BytesIO(file_bytes) as docx_io:
+                doc = Document(docx_io)
+                text = "\n".join(p.text for p in doc.paragraphs)
+                return text.strip()
+
+        else:
+            logger.warning(f"[extract_text] Unsupported file extension: {ext}")
+            return ""
 
     except Exception as e:
-        return f"Error extracting text: {e}"
+        logger.error(f"[extract_text] Failed to extract from {filename}: {e}")
+        return ""
