@@ -33,3 +33,12 @@ class InterviewSubmission(Base):
     feedback = Column(JSONB, nullable=True)
     grand_score_percent = Column(Float, nullable=True)  # ✅ Must exist
     submitted_at = Column(DateTime, default=datetime.utcnow)
+
+# JobDescription Model
+class JobDescription(Base):
+    __tablename__ = "job_descriptions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    job_title = Column(String, nullable=False)
+    description = Column(Text, nullable=False)
+    uploaded_at = Column(DateTime, default=datetime.utcnow)
