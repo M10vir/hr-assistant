@@ -6,9 +6,7 @@ const ResumeUploader = () => {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
 
-  const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
-  };
+  const handleFileChange = (e) => setFile(e.target.files[0]);
 
   const handleUpload = async () => {
     if (!file || !jobDescription) {
@@ -26,9 +24,7 @@ const ResumeUploader = () => {
         body: formData,
       });
 
-      if (!response.ok) {
-        throw new Error('Upload failed');
-      }
+      if (!response.ok) throw new Error('Upload failed');
 
       const data = await response.json();
       setResult(data);
@@ -39,35 +35,44 @@ const ResumeUploader = () => {
   };
 
   return (
-    <div style={{ marginBottom: '2rem' }}>
-      <h2>📤 Upload Resume for Scoring</h2>
-      <input type="file" accept=".pdf,.doc,.docx" onChange={handleFileChange} />
-      <br />
+    <div style={containerStyle}>
+      <h2 style={headingStyle}>📤 Upload Resume for Scoring</h2>
+
+      <label htmlFor="resumeFile" style={browseLabelStyle}>
+        📂 Browse Resume
+      </label>
+      <input
+        id="resumeFile"
+        type="file"
+        accept=".pdf,.doc,.docx"
+        onChange={handleFileChange}
+        style={{ display: 'none' }}
+      />
+      {file && <span style={filenameStyle}>{file.name}</span>}
+
       <textarea
         placeholder="Paste the job description here..."
         rows={5}
-        style={{ width: '100%', marginTop: '1rem' }}
         value={jobDescription}
         onChange={(e) => setJobDescription(e.target.value)}
+        style={textareaStyle}
       />
-      <br />
-      <button onClick={handleUpload} style={{ marginTop: '1rem' }}>
-        Upload & Score
-      </button>
 
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      <button onClick={handleUpload} style={buttonStyle}>Upload & Score</button>
+
+      {error && <p style={{ color: 'red', marginTop: '1rem' }}>{error}</p>}
 
       {result && (
-        <div style={{ marginTop: '1rem' }}>
-          <h3>✅ Scoring Result for: {result.filename}</h3>
-          <ul>
+        <div style={resultBoxStyle}>
+          <h3 style={resultTitleStyle}>✅ Scoring Result for: {result.filename}</h3>
+          <ul style={scoreListStyle}>
             <li><strong>Relevance Score:</strong> {result.scores.relevance_score}</li>
             <li><strong>ATS Score:</strong> {result.scores.ats_score}</li>
             <li><strong>Readability Score:</strong> {result.scores.readability_score}</li>
           </ul>
           <details>
-            <summary>📄 Resume Excerpt</summary>
-            <pre style={{ whiteSpace: 'pre-wrap' }}>{result.excerpt}</pre>
+            <summary style={summaryStyle}>📄 Resume Excerpt</summary>
+            <pre style={{ whiteSpace: 'pre-wrap', marginTop: '0.5rem', color: '#ccc' }}>{result.excerpt}</pre>
           </details>
         </div>
       )}
@@ -75,4 +80,100 @@ const ResumeUploader = () => {
   );
 };
 
+// 🎨 Unified Styling
+
+const containerStyle = {
+  backgroundColor: '#161616',
+  padding: '2rem 1.5rem',
+  borderRadius: '10px',
+  maxWidth: '580px',
+  width: '100%',
+  margin: '0 auto',
+  color: '#fff',
+  fontFamily: 'sans-serif',
+  boxShadow: '0 0 10px #00ffe7',
+  border: '1px solid #00ffe7'
+};
+
+const headingStyle = {
+  fontSize: '1.2rem',
+  marginBottom: '1.5rem',
+  fontWeight: '600',
+  color: '#fff',
+  textAlign: 'center'
+};
+
+const browseLabelStyle = {
+  backgroundColor: '#2c2c2c',
+  color: '#fff',
+  padding: '0.6rem 1.2rem',
+  borderRadius: '6px',
+  border: '1px solid #00ffe7',
+  fontWeight: 'bold',
+  cursor: 'pointer',
+  fontSize: '0.95rem',
+  display: 'inline-block',
+  marginBottom: '0.5rem'
+};
+
+const filenameStyle = {
+  color: '#aaa',
+  fontSize: '0.9rem',
+  textAlign: 'center',
+  marginBottom: '1rem',
+  display: 'block'
+};
+
+const textareaStyle = {
+  backgroundColor: '#1e1e1e',
+  color: '#fff',
+  border: '1px solid #00ffe7',
+  borderRadius: '6px',
+  padding: '0.8rem',
+  width: '100%',
+  fontSize: '0.95rem',
+  resize: 'vertical'
+};
+
+const buttonStyle = {
+  padding: '0.6rem 1.2rem',
+  backgroundColor: '#2c2c2c',
+  color: '#fff',
+  border: '1px solid #00ffe7',
+  borderRadius: '6px',
+  fontWeight: 'bold',
+  cursor: 'pointer',
+  fontSize: '0.95rem',
+  transition: 'background-color 0.3s ease',
+  marginTop: '1rem'
+};
+
+const resultBoxStyle = {
+  marginTop: '2rem',
+  padding: '1rem',
+  border: '1px solid #00ffe7',
+  borderRadius: '8px',
+  backgroundColor: '#1e1e1e'
+};
+
+const resultTitleStyle = {
+  fontSize: '1.1rem',
+  color: '#00ffe7',
+  marginBottom: '0.8rem'
+};
+
+const scoreListStyle = {
+  listStyleType: 'none',
+  paddingLeft: 0,
+  color: '#ccc',
+  fontSize: '0.95rem'
+};
+
+const summaryStyle = {
+  color: '#fff',
+  fontSize: '0.95rem',
+  cursor: 'pointer'
+};
+
 export default ResumeUploader;
+ 

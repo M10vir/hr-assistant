@@ -27,9 +27,8 @@ const InterviewAssessmentForm = () => {
     }
   };
 
-  const handleChange = (e) => {
+  const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
 
   const handleAnswerChange = (value) => {
     const updatedAnswers = [...answers];
@@ -47,13 +46,8 @@ const InterviewAssessmentForm = () => {
     try {
       const res = await fetch('http://127.0.0.1:8000/interview/assessment/submit', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          ...formData,
-          answers
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...formData, answers })
       });
       const result = await res.json();
       console.log('Submission result:', result);
@@ -63,59 +57,67 @@ const InterviewAssessmentForm = () => {
     }
   };
 
-  if (submitted) return <p>Thank you! Your answers have been submitted.</p>;
+  if (submitted) {
+    return <p style={confirmationStyle}>✅ Thank you! Your answers have been submitted.</p>;
+  }
 
   return (
-    <div>
-      <h2>Online Interview Assessment</h2>
+    <div style={containerStyle}>
+      <h2 style={headingStyle}>📝 Online Interview Assessment</h2>
 
       {!started && (
-        <div>
+        <div style={inputContainerStyle}>
           <input
             type="text"
             name="candidate_name"
             placeholder="Candidate Name"
             value={formData.candidate_name}
             onChange={handleChange}
-          /><br />
+            style={inputStyle}
+          />
           <input
             type="email"
             name="email"
             placeholder="Email"
             value={formData.email}
             onChange={handleChange}
-          /><br />
+            style={inputStyle}
+          />
           <input
             type="text"
             name="phone_number"
             placeholder="Phone Number"
             value={formData.phone_number}
             onChange={handleChange}
-          /><br />
+            style={inputStyle}
+          />
           <input
             type="text"
             name="job_title"
             placeholder="Job Title"
             value={formData.job_title}
             onChange={handleChange}
-          /><br />
-          <button onClick={fetchQuestions}>Start Assessment</button>
+            style={inputStyle}
+          />
+          <button onClick={fetchQuestions} style={buttonStyle}>Start Assessment</button>
         </div>
       )}
 
       {started && questions.length > 0 && (
         <div>
-          <h3><strong>Q{currentQuestionIndex + 1}:</strong> {questions[currentQuestionIndex]}</h3>
+          <h3 style={questionStyle}>
+            <strong>Q{currentQuestionIndex + 1}:</strong> {questions[currentQuestionIndex]}
+          </h3>
           <textarea
             rows="4"
-            cols="80"
             value={answers[currentQuestionIndex]}
             onChange={(e) => handleAnswerChange(e.target.value)}
-          /><br />
+            style={textareaStyle}
+          />
           {currentQuestionIndex < questions.length - 1 ? (
-            <button onClick={handleNext}>Next</button>
+            <button onClick={handleNext} style={buttonStyle}>Next</button>
           ) : (
-            <button onClick={handleSubmit}>Submit Answers</button>
+            <button onClick={handleSubmit} style={buttonStyle}>Submit Answers</button>
           )}
         </div>
       )}
@@ -123,4 +125,80 @@ const InterviewAssessmentForm = () => {
   );
 };
 
-export default InterviewAssessmentForm; 
+// 💄 Consistent Styling
+
+const containerStyle = {
+  backgroundColor: '#161616',
+  padding: '2rem 1.5rem',
+  borderRadius: '10px',
+  maxWidth: '580px',
+  width: '100%',
+  margin: '0 auto',
+  color: '#fff',
+  fontFamily: 'sans-serif',
+  boxShadow: '0 0 10px #00ffe7',
+  border: '1px solid #00ffe7'
+};
+
+const headingStyle = {
+  fontSize: '1.2rem',
+  fontWeight: '600',
+  marginBottom: '1.5rem',
+  textAlign: 'center'
+};
+
+const inputContainerStyle = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '1rem',
+  marginBottom: '1rem'
+};
+
+const inputStyle = {
+  backgroundColor: '#1e1e1e',
+  color: '#fff',
+  border: '1px solid #00ffe7',
+  borderRadius: '6px',
+  padding: '0.6rem',
+  fontSize: '0.95rem'
+};
+
+const textareaStyle = {
+  backgroundColor: '#1e1e1e',
+  color: '#fff',
+  border: '1px solid #00ffe7',
+  borderRadius: '6px',
+  padding: '0.8rem',
+  width: '100%',
+  fontSize: '0.95rem',
+  marginBottom: '1rem'
+};
+
+const buttonStyle = {
+  padding: '0.6rem 1.2rem',
+  backgroundColor: '#2c2c2c',
+  color: '#fff',
+  border: '1px solid #00ffe7',
+  borderRadius: '6px',
+  fontWeight: 'bold',
+  cursor: 'pointer',
+  fontSize: '0.95rem',
+  alignSelf: 'center'
+};
+
+const questionStyle = {
+  fontSize: '0.95rem',
+  marginBottom: '0.8rem',
+  color: '#ccc',
+  textAlign: 'center'
+};
+
+const confirmationStyle = {
+  color: '#00ffe7',
+  fontSize: '0.95rem',
+  textAlign: 'center',
+  marginTop: '1.5rem'
+};
+
+export default InterviewAssessmentForm;
+ 

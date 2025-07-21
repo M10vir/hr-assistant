@@ -1,228 +1,136 @@
-// frontend/src/components/Home.jsx
 import React, { useState } from 'react';
-import axios from 'axios';
+import ResumeUploader from './ResumeUploader';
+import JDUploader from './JDUploader';
+import ResumeScoreDashboard from './ResumeScoreDashboard';
+import ResumeRecommendation from './ResumeRecommendation';
+import InterviewUploader from './InterviewUploader';
+import InterviewAssessmentForm from './InterviewAssessmentForm';
+import InterviewAssessmentDashboard from './InterviewAssessmentDashboard';
+
+const ModalWrapper = ({ children, onClose }) => (
+  <div style={{
+    position: 'fixed',
+    top: 0, left: 0, right: 0, bottom: 0,
+    background: 'rgba(0,0,0,0.75)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000
+  }}>
+    <div style={{
+      background: '#161616',
+      color: '#fff',
+      padding: '20px',
+      borderRadius: '10px',
+      maxWidth: '1500px',
+      width: '90%',
+      border: '1px solid #00ffe7',
+      boxShadow: '0 0 10px #00ffe7',
+      maxHeight: '75vh',
+      overflowY: 'auto'
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
+        <button
+          onClick={onClose}
+          style={{
+            backgroundColor: '#2c2c2c',
+            color: '#fff',
+            border: '1px solid #00ffe7',
+            padding: '6px 10px',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            fontSize: '0.9rem',
+            transition: 'background 0.3s ease'
+          }}
+          onMouseEnter={e => e.currentTarget.style.backgroundColor = '#00ffe7'}
+          onMouseLeave={e => e.currentTarget.style.backgroundColor = '#2c2c2c'}
+        >
+          ✖ CLOSE
+        </button>
+      </div>
+      {children}
+    </div>
+  </div>
+);
 
 const Home = () => {
-  const [showModal, setShowModal] = useState(false);
-  const [file, setFile] = useState(null);
+  const [activeModal, setActiveModal] = useState(null);
 
-  const handleUpload = async () => {
-    if (!file) return alert('Please select a file.');
+  const cards = [
+    { title: '📁 Upload JD', desc: 'Store job descriptions for AI matching.', key: 'jd' },
+    { title: '📄 Upload Resume', desc: 'AI-powered resume scoring & suggestions.', key: 'resume' },
+    { title: '📊 Resume Dashboard', desc: 'ATS, readability, relevance visualized.', key: 'resumeDashboard' },
+    { title: '🤖 AI Recommendations', desc: 'Smart candidate suggestions via LLM.', key: 'aiRecommendations' },
+    { title: '🎙️ Interview Analysis', desc: 'Upload audio for GPT feedback.', key: 'interviewAnalysis' },
+    { title: '📝 Interview Form', desc: 'Collect structured responses live.', key: 'interviewForm' },
+    { title: '📈 Assessment Dashboard', desc: 'Score candidates on key metrics.', key: 'assessmentDashboard' }
+  ];
 
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      await axios.post('http://localhost:8000/jd/upload-jd/', formData);
-      alert('JD uploaded successfully!');
-      setShowModal(false);
-    } catch (error) {
-      console.error('Upload error:', error);
-      alert('Failed to upload JD.');
+  const renderModal = () => {
+    switch (activeModal) {
+      case 'jd': return <ModalWrapper onClose={() => setActiveModal(null)}><JDUploader /></ModalWrapper>;
+      case 'resume': return <ModalWrapper onClose={() => setActiveModal(null)}><ResumeUploader /></ModalWrapper>;
+      case 'resumeDashboard': return <ModalWrapper onClose={() => setActiveModal(null)}><ResumeScoreDashboard /></ModalWrapper>;
+      case 'aiRecommendations': return <ModalWrapper onClose={() => setActiveModal(null)}><ResumeRecommendation /></ModalWrapper>;
+      case 'interviewAnalysis': return <ModalWrapper onClose={() => setActiveModal(null)}><InterviewUploader /></ModalWrapper>;
+      case 'interviewForm': return <ModalWrapper onClose={() => setActiveModal(null)}><InterviewAssessmentForm /></ModalWrapper>;
+      case 'assessmentDashboard': return <ModalWrapper onClose={() => setActiveModal(null)}><InterviewAssessmentDashboard /></ModalWrapper>;
+      default: return null;
     }
   };
 
   return (
-    <div style={containerStyle}>
-      <h2 style={titleStyle}>🚀 Welcome to the AI-Powered HR Recruitment Assistant</h2>
+    <div style={{
+      background: 'linear-gradient(135deg, #0f2027, #203a43, #2c5364)',
+      color: '#fff',
+      minHeight: '100vh',
+      padding: '50px 20px',
+      fontFamily: 'sans-serif'
+    }}>
+      <header style={{
+        textAlign: 'center',
+        marginBottom: '40px'
+      }}>
+        <h1 style={{ fontSize: '2.2rem', color: '#00ffe7' }}>🚀 AI-Powered HR Recruitment Assistant</h1>
+        <p style={{ color: '#ccc', maxWidth: '700px', margin: '10px auto' }}>
+          Automate screening, scoring, and interview analysis with advanced AI tools built for the modern recruiter.
+        </p>
+      </header>
 
-      <p style={descriptionStyle}>
-        Revolutionize your recruitment process with AI-driven resume scoring, smart job matching,
-        and intelligent interview analysis — all in one unified platform.
-      </p>
-
-      <div style={gridStyle}>
-        {features.map((feature, index) => (
+      <section style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+        gap: '25px',
+        maxWidth: '1200px',
+        margin: '0 auto'
+      }}>
+        {cards.map(({ title, desc, key }) => (
           <div
-            key={index}
-            onClick={() => {
-              if (feature.title === 'Upload Job Descriptions') {
-                setShowModal(true);
-              } else {
-                window.location.href = feature.link;
-              }
+            key={key}
+            onClick={() => setActiveModal(key)}
+            style={{
+              background: '#1e1e1e',
+              borderRadius: '12px',
+              padding: '24px',
+              cursor: 'pointer',
+              border: '1px solid #00ffe7',
+              boxShadow: '0 0 10px #00ffe7',
+              transition: 'transform 0.2s ease-in-out'
             }}
-            style={cardStyle}
+            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
+            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1.0)'}
           >
-            <div style={iconStyle}>{feature.icon}</div>
-            <h3 style={cardTitleStyle}>{feature.title}</h3>
-            <p style={cardDescStyle}>{feature.description}</p>
+            <h3 style={{ color: '#00ffe7', marginBottom: '12px' }}>{title}</h3>
+            <p style={{ color: '#aaa', fontSize: '0.95rem' }}>{desc}</p>
           </div>
         ))}
-      </div>
+      </section>
 
-      {showModal && (
-        <div style={modalOverlayStyle}>
-          <div style={modalContentStyle}>
-            <h2 style={headingStyle}>📄 Upload Job Description</h2>
-            <div style={uploadBoxStyle}>
-              <input type="file" onChange={(e) => setFile(e.target.files[0])} style={fileInputStyle} />
-              <button onClick={handleUpload} style={buttonStyle}>Upload JD</button>
-              <button onClick={() => setShowModal(false)} style={cancelButtonStyle}>Cancel</button>
-            </div>
-          </div>
-        </div>
-      )}
+      {renderModal()}
     </div>
   );
 };
 
-// 🔗 Features
-const features = [
-  {
-    icon: '📄',
-    title: 'Upload Job Descriptions',
-    description: 'Import and store JD files for matching with top candidate profiles.',
-    link: '#',
-  },
-  {
-    icon: '📤',
-    title: 'Upload Resumes',
-    description: 'Submit DOCX or PDF resumes for instant AI-powered scoring.',
-    link: '/resume-upload',
-  },
-  {
-    icon: '📊',
-    title: 'Resume Dashboard',
-    description: 'Visualize relevance, ATS, and readability scores in real time.',
-    link: '/resume-dashboard',
-  },
-  {
-    icon: '🧠',
-    title: 'AI Recommendations',
-    description: 'Get top candidate suggestions based on job title and fit score.',
-    link: '/recommendation',
-  },
-  {
-    icon: '🎙',
-    title: 'Interview Analysis',
-    description: 'Analyze spoken responses with GPT feedback and confidence ratings.',
-    link: '/interview',
-  },
-  {
-    icon: '📝',
-    title: 'Online Interview Form',
-    description: 'Deliver interactive assessments and capture structured answers.',
-    link: '/interview-form',
-  },
-  {
-    icon: '📋',
-    title: 'Assessment Dashboard',
-    description: 'Review interview scores and candidate performance at a glance.',
-    link: '/assessment-dashboard',
-  },
-];
-
-// 🎨 Styling
-const containerStyle = {
-  textAlign: 'center',
-  padding: '3rem 2rem',
-  backgroundColor: '#121212',
-  color: '#ffffff',
-  maxWidth: '1200px',
-  margin: '0 auto',
-};
-
-const titleStyle = {
-  fontSize: '2.4rem',
-  marginBottom: '1rem',
-  color: '#00BFFF',
-};
-
-const descriptionStyle = {
-  fontSize: '1.1rem',
-  color: '#ccc',
-  marginBottom: '2.5rem',
-  lineHeight: '1.6',
-};
-
-const gridStyle = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-  gap: '1.8rem',
-};
-
-const cardStyle = {
-  background: '#1e1e1e',
-  borderRadius: '12px',
-  padding: '1.8rem 1.5rem',
-  border: '1px solid #333',
-  boxShadow: '0 4px 10px rgba(0, 191, 255, 0.05)',
-  textAlign: 'left',
-  cursor: 'pointer',
-  transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-};
-
-const iconStyle = {
-  fontSize: '2rem',
-  marginBottom: '0.6rem',
-};
-
-const cardTitleStyle = {
-  fontSize: '1.2rem',
-  color: '#00BFFF',
-  marginBottom: '0.5rem',
-};
-
-const cardDescStyle = {
-  fontSize: '0.95rem',
-  color: '#ccc',
-};
-
-// 📦 Modal Styles
-const modalOverlayStyle = {
-  position: 'fixed',
-  top: 0,
-  left: 0,
-  width: '100vw',
-  height: '100vh',
-  backgroundColor: 'rgba(0, 0, 0, 0.7)',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  zIndex: 1000,
-};
-
-const modalContentStyle = {
-  backgroundColor: '#1e1e1e',
-  padding: '2rem',
-  borderRadius: '12px',
-  textAlign: 'center',
-  width: '400px',
-  boxShadow: '0 0 20px rgba(0, 191, 255, 0.2)',
-};
-
-const headingStyle = {
-  color: '#00BFFF',
-  marginBottom: '1rem',
-};
-
-const uploadBoxStyle = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: '1rem',
-};
-
-const fileInputStyle = {
-  padding: '0.5rem',
-  backgroundColor: '#2e2e2e',
-  color: '#fff',
-  border: '1px solid #444',
-  borderRadius: '5px',
-};
-
-const buttonStyle = {
-  padding: '0.6rem 1rem',
-  backgroundColor: '#00BFFF',
-  color: 'white',
-  border: 'none',
-  borderRadius: '6px',
-  cursor: 'pointer',
-};
-
-const cancelButtonStyle = {
-  ...buttonStyle,
-  backgroundColor: '#555',
-};
-
 export default Home;
+ 
