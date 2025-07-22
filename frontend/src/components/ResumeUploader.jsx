@@ -38,9 +38,7 @@ const ResumeUploader = () => {
     <div style={containerStyle}>
       <h2 style={headingStyle}>📤 Upload Resume for Scoring</h2>
 
-      <label htmlFor="resumeFile" style={browseLabelStyle}>
-        📂 Browse Resume
-      </label>
+      <label htmlFor="resumeFile" style={browseLabelStyle}>📂 Browse Resume</label>
       <input
         id="resumeFile"
         type="file"
@@ -60,10 +58,10 @@ const ResumeUploader = () => {
 
       <button onClick={handleUpload} style={buttonStyle}>Upload & Score</button>
 
-      {error && <p style={{ color: 'red', marginTop: '1rem' }}>{error}</p>}
+      {error && <p style={errorStyle}>{error}</p>}
 
       {result && (
-        <div style={resultBoxStyle}>
+        <div style={resultContainerStyle}>
           <h3 style={resultTitleStyle}>✅ Scoring Result for: {result.filename}</h3>
           <ul style={scoreListStyle}>
             <li><strong>Relevance Score:</strong> {result.scores.relevance_score}</li>
@@ -72,7 +70,9 @@ const ResumeUploader = () => {
           </ul>
           <details>
             <summary style={summaryStyle}>📄 Resume Excerpt</summary>
-            <pre style={{ whiteSpace: 'pre-wrap', marginTop: '0.5rem', color: '#ccc' }}>{result.excerpt}</pre>
+            <div style={excerptWrapper}>
+              <pre style={excerptText}>{result.excerpt}</pre>
+            </div>
           </details>
         </div>
       )}
@@ -80,13 +80,13 @@ const ResumeUploader = () => {
   );
 };
 
-// 🎨 Unified Styling
+// 🎨 Styling
 
 const containerStyle = {
   backgroundColor: '#161616',
   padding: '2rem 1.5rem',
   borderRadius: '10px',
-  maxWidth: '580px',
+  maxWidth: '700px',
   width: '100%',
   margin: '0 auto',
   color: '#fff',
@@ -99,7 +99,6 @@ const headingStyle = {
   fontSize: '1.2rem',
   marginBottom: '1.5rem',
   fontWeight: '600',
-  color: '#fff',
   textAlign: 'center'
 };
 
@@ -130,7 +129,7 @@ const textareaStyle = {
   border: '1px solid #00ffe7',
   borderRadius: '6px',
   padding: '0.8rem',
-  width: '100%',
+  width: '95.5%',
   fontSize: '0.95rem',
   resize: 'vertical'
 };
@@ -148,18 +147,28 @@ const buttonStyle = {
   marginTop: '1rem'
 };
 
-const resultBoxStyle = {
+const errorStyle = {
+  color: 'tomato',
+  marginTop: '1rem',
+  fontSize: '0.95rem',
+  textAlign: 'center'
+};
+
+const resultContainerStyle = {
   marginTop: '2rem',
   padding: '1rem',
-  border: '1px solid #00ffe7',
   borderRadius: '8px',
-  backgroundColor: '#1e1e1e'
+  backgroundColor: '#1e1e1e',
+  border: '1px solid #00ffe7',
+  maxWidth: '100%',
+  overflowX: 'auto'
 };
 
 const resultTitleStyle = {
   fontSize: '1.1rem',
   color: '#00ffe7',
-  marginBottom: '0.8rem'
+  marginBottom: '0.8rem',
+  textAlign: 'center'
 };
 
 const scoreListStyle = {
@@ -173,6 +182,22 @@ const summaryStyle = {
   color: '#fff',
   fontSize: '0.95rem',
   cursor: 'pointer'
+};
+
+const excerptWrapper = {
+  marginTop: '0.5rem',
+  backgroundColor: '#000',
+  padding: '1rem',
+  borderRadius: '6px',
+  border: '1px solid #333',
+  overflowX: 'auto',
+  maxWidth: '100%'
+};
+
+const excerptText = {
+  whiteSpace: 'pre-wrap',
+  fontSize: '0.95rem',
+  color: '#ccc'
 };
 
 export default ResumeUploader;
