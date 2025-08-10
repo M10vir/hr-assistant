@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 
 const ResumeUploader = () => {
   const [file, setFile] = useState(null);
-  const [jobDescription, setJobDescription] = useState(''); // hidden payload for now
+  const [jobDescription, setJobDescription] = useState(''); // kept for preview only
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
 
-  // NEW: JD dropdown state
+  // JD dropdown state
   const [jdList, setJdList] = useState([]);
   const [selectedJdId, setSelectedJdId] = useState('');
   const [jdLoading, setJdLoading] = useState(false);
@@ -28,7 +28,7 @@ const ResumeUploader = () => {
     return () => { alive = false; };
   }, []);
 
-  // When a JD is selected, fetch full text and store in jobDescription (hidden)
+  // When a JD is selected, fetch full text and store in jobDescription (for preview only)
   const handleJdChange = async (e) => {
     const id = e.target.value;
     setSelectedJdId(id);
@@ -56,13 +56,11 @@ const ResumeUploader = () => {
 
     if (!file) return setError('Please upload a resume.');
     if (!selectedJdId) return setError('Please select a Job Description.');
-    if (!jobDescription) return setError('Selected JD content is still loading. Please wait a moment.');
+    // no need to check jobDescription anymore (backend reads JD by id)
 
     const formData = new FormData();
     formData.append('file', file);
-
-    // ✅ Keep sending JD TEXT for now (backend Step 3 will switch to jd_id)
-    formData.append('job_description', jobDescription);
+    formData.append('jd_id', selectedJdId); // ✅ send id, not raw JD text
 
     try {
       const response = await fetch('http://localhost:8000/resumes/resume/score', {
@@ -104,7 +102,7 @@ const ResumeUploader = () => {
         ))}
       </select>
 
-      {/* Small, optional preview to keep layout feel; same width & border family */}
+      {/* Optional preview to keep vertical rhythm and clarity */}
       {selectedJdId && (
         <div style={jdPreviewStyle}>
           <pre style={jdPreviewText}>
@@ -141,7 +139,7 @@ const ResumeUploader = () => {
   );
 };
 
-// 🎨 Styling (kept identical where it affects borders/width/alignment)
+// 🎨 Styling (unchanged where it affects borders/width/alignment)
 
 const containerStyle = {
   backgroundColor: '#161616',
@@ -184,7 +182,7 @@ const filenameStyle = {
   display: 'block'
 };
 
-// ⬇️ New select styled to match your textarea border & width
+// Styled to match your original textarea border/width
 const selectStyle = {
   backgroundColor: '#1e1e1e',
   color: '#fff',
@@ -196,7 +194,6 @@ const selectStyle = {
   marginBottom: '0.75rem'
 };
 
-// Optional JD preview box to keep vertical rhythm and clarity
 const jdPreviewStyle = {
   backgroundColor: '#000',
   border: '1px solid #333',
