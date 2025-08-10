@@ -1,21 +1,67 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 const ResumeUploader = () => {
   const [file, setFile] = useState(null);
-  const [jobDescription, setJobDescription] = useState('');
+  const [jobDescription, setJobDescription] = useState(''); // hidden payload for now
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+
+  // NEW: JD dropdown state
+  const [jdList, setJdList] = useState([]);
+  const [selectedJdId, setSelectedJdId] = useState('');
+  const [jdLoading, setJdLoading] = useState(false);
+  const [jdFetchError, setJdFetchError] = useState(null);
+
+  // Load JD options on mount
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const res = await fetch('http://localhost:8000/jd/list');
+        if (!res.ok) throw new Error(`JD list fetch failed (${res.status})`);
+        const data = await res.json();
+        if (alive) setJdList(Array.isArray(data) ? data : []);
+      } catch (e) {
+        if (alive) setJdFetchError(e.message);
+      }
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  // When a JD is selected, fetch full text and store in jobDescription (hidden)
+  const handleJdChange = async (e) => {
+    const id = e.target.value;
+    setSelectedJdId(id);
+    setJobDescription('');
+    setJdFetchError(null);
+    if (!id) return;
+    setJdLoading(true);
+    try {
+      const res = await fetch(`http://localhost:8000/jd/${id}`);
+      if (!res.ok) throw new Error(`JD fetch failed (${res.status})`);
+      const data = await res.json();
+      setJobDescription(data?.description || '');
+    } catch (err) {
+      setJdFetchError(err.message || 'Failed to fetch JD.');
+    } finally {
+      setJdLoading(false);
+    }
+  };
 
   const handleFileChange = (e) => setFile(e.target.files[0]);
 
   const handleUpload = async () => {
-    if (!file || !jobDescription) {
-      setError('Please upload a resume and enter a job description.');
-      return;
-    }
+    setError(null);
+    setResult(null);
+
+    if (!file) return setError('Please upload a resume.');
+    if (!selectedJdId) return setError('Please select a Job Description.');
+    if (!jobDescription) return setError('Selected JD content is still loading. Please wait a moment.');
 
     const formData = new FormData();
     formData.append('file', file);
+
+    // ✅ Keep sending JD TEXT for now (backend Step 3 will switch to jd_id)
     formData.append('job_description', jobDescription);
 
     try {
@@ -23,12 +69,9 @@ const ResumeUploader = () => {
         method: 'POST',
         body: formData,
       });
-
       if (!response.ok) throw new Error('Upload failed');
-
       const data = await response.json();
       setResult(data);
-      setError(null);
     } catch (err) {
       setError(err.message || 'Something went wrong');
     }
@@ -38,6 +81,7 @@ const ResumeUploader = () => {
     <div style={containerStyle}>
       <h2 style={headingStyle}>📤 Upload Resume for Scoring</h2>
 
+      {/* File picker */}
       <label htmlFor="resumeFile" style={browseLabelStyle}>📂 Browse Resume</label>
       <input
         id="resumeFile"
@@ -48,15 +92,32 @@ const ResumeUploader = () => {
       />
       {file && <span style={filenameStyle}>{file.name}</span>}
 
-      <textarea
-        placeholder="Paste the job description here..."
-        rows={5}
-        value={jobDescription}
-        onChange={(e) => setJobDescription(e.target.value)}
-        style={textareaStyle}
-      />
+      {/* JD Dropdown (styled to match your textarea border/width/alignment) */}
+      <select
+        value={selectedJdId}
+        onChange={handleJdChange}
+        style={selectStyle}   // ← matches textareaStyle border/width
+      >
+        <option value="">— Select Job Description —</option>
+        {jdList.map((jd) => (
+          <option key={jd.id} value={jd.id}>{jd.job_title}</option>
+        ))}
+      </select>
 
-      <button onClick={handleUpload} style={buttonStyle}>Upload & Score</button>
+      {/* Small, optional preview to keep layout feel; same width & border family */}
+      {selectedJdId && (
+        <div style={jdPreviewStyle}>
+          <pre style={jdPreviewText}>
+            {jdLoading
+              ? 'Loading JD description…'
+              : (jobDescription ? jobDescription.slice(0, 800) + (jobDescription.length > 800 ? '…' : '') : (jdFetchError || 'No description found.'))}
+          </pre>
+        </div>
+      )}
+
+      <button onClick={handleUpload} style={buttonStyle} disabled={jdLoading}>
+        Upload & Score
+      </button>
 
       {error && <p style={errorStyle}>{error}</p>}
 
@@ -80,7 +141,7 @@ const ResumeUploader = () => {
   );
 };
 
-// 🎨 Styling
+// 🎨 Styling (kept identical where it affects borders/width/alignment)
 
 const containerStyle = {
   backgroundColor: '#161616',
@@ -123,7 +184,8 @@ const filenameStyle = {
   display: 'block'
 };
 
-const textareaStyle = {
+// ⬇️ New select styled to match your textarea border & width
+const selectStyle = {
   backgroundColor: '#1e1e1e',
   color: '#fff',
   border: '1px solid #00ffe7',
@@ -131,7 +193,25 @@ const textareaStyle = {
   padding: '0.8rem',
   width: '95.5%',
   fontSize: '0.95rem',
-  resize: 'vertical'
+  marginBottom: '0.75rem'
+};
+
+// Optional JD preview box to keep vertical rhythm and clarity
+const jdPreviewStyle = {
+  backgroundColor: '#000',
+  border: '1px solid #333',
+  borderRadius: '6px',
+  padding: '0.8rem',
+  width: '95.5%',
+  maxHeight: '140px',
+  overflow: 'auto',
+  marginBottom: '0.25rem'
+};
+
+const jdPreviewText = {
+  whiteSpace: 'pre-wrap',
+  fontSize: '0.9rem',
+  color: '#ccc',
 };
 
 const buttonStyle = {
@@ -200,5 +280,4 @@ const excerptText = {
   color: '#ccc'
 };
 
-export default ResumeUploader;
- 
+export default ResumeUploader; 
