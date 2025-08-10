@@ -1,103 +1,104 @@
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
+# backend/app/api/routes_resume.py
+
+from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, Form
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
 from sqlalchemy import insert
+from sqlalchemy.future import select
 from datetime import datetime
+import os, textract
 
 from app.db.database import get_db
-from app.models.db_models import ResumeScore
-from app.utils.extract_text import extract_text_from_file
-from app.utils.score_resume import (
-    compute_relevance_score,
-    compute_ats_score,
-    compute_readability_score
-)
-from app.utils.extract_name import extract_candidate_details
-from app.utils.email_notify import send_hr_notification  # ✅ Include email notifier
+from app.models.db_models import ResumeScore, JobDescription
+from app.services.resume_matcher import get_jd_resume_match_score
+# If you have existing scorers, import them here
+# from app.services.resume_scorer import score_ats_readability
 
 router = APIRouter()
 
-# 🔹 POST /resumes/resume/score — Score resume and save to DB
 @router.post("/resume/score")
-async def score_resume(
+async def score_resume_against_jd(
+    jd_id: int = Form(...),
     file: UploadFile = File(...),
-    job_description: str = Form(...),
     db: AsyncSession = Depends(get_db),
 ):
+    """
+    Upload a resume file, parse text, fetch JD by jd_id, and compute relevance score via GPT.
+    Stores to resume_scores (including resume_text). Returns scores for UI.
+    """
+    # 1) Fetch JD
+    jd_row = await db.execute(
+        select(JobDescription).where(JobDescription.id == jd_id)
+    )
+    jd = jd_row.scalar_one_or_none()
+    if not jd:
+        raise HTTPException(status_code=404, detail="Job Description not found for given jd_id.")
+
+    # 2) Persist file temporarily and extract text
     try:
-        # Step 1: Extract raw text from uploaded file content
         contents = await file.read()
-        extracted_text = extract_text_from_file(file.filename, contents)
+        temp_path = f"/tmp/{file.filename}"
+        with open(temp_path, "wb") as f:
+            f.write(contents)
+        resume_text = textract.process(temp_path).decode("utf-8", errors="ignore").strip()
+        try:
+            os.remove(temp_path)
+        except Exception:
+            pass
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Resume text extraction failed: {str(e)}")
 
-        # Step 2: Extract candidate details
-        candidate_name, email, phone_number = extract_candidate_details(extracted_text)
+    if not resume_text:
+        raise HTTPException(status_code=400, detail="No text could be extracted from the resume.")
 
-        # Step 3: Compute AI-based scores
-        relevance_score = compute_relevance_score(extracted_text, job_description)
-        ats_score = compute_ats_score(extracted_text)
-        readability_score = compute_readability_score(extracted_text)
+    # 3) Compute relevance score via GPT (JD vs resume_text)
+    match_result = get_jd_resume_match_score(resume_text=resume_text, jd_text=jd.description)
+    relevance_score = int(match_result.get("match_score", 0))
+    feedback = match_result.get("feedback", "")
 
-        # Step 4: Save record in the database
+    # 4) (Optional) ATS & readability scoring via your existing logic
+    # ats_score, readability_score = score_ats_readability(resume_text)
+    # For now, if you don't have a function handy, default to 0 or keep existing calculations elsewhere:
+    ats_score = 0
+    readability_score = 0
+
+    # 5) Extract minimal candidate info if you already do this elsewhere, otherwise leave blank
+    candidate_name = ""
+    email = ""
+    phone_number = ""
+
+    # 6) Insert into resume_scores (including resume_text) – always store; UI will filter top 20 ≥90 later
+    try:
         stmt = insert(ResumeScore).values(
             candidate_name=candidate_name,
             filename=file.filename,
             relevance_score=relevance_score,
             ats_score=ats_score,
             readability_score=readability_score,
+            created_at=datetime.utcnow(),
             email=email,
             phone_number=phone_number,
-            created_at=datetime.utcnow(),
-        )
-        await db.execute(stmt)
+            resume_text=resume_text,   # <-- new column we added
+        ).returning(ResumeScore.id)
+        res = await db.execute(stmt)
+        new_id = res.scalar_one()
         await db.commit()
-
-        # ✅ Step 5: Notify HR if candidate is highly relevant
-        if relevance_score >= 90:
-            send_hr_notification(
-                candidate_name=candidate_name,
-                score=relevance_score,
-                filename=file.filename,
-                email=email,
-                phone_number=phone_number
-            )
-
-        # Step 6: Return response
-        return {
-            "filename": file.filename,
-            "candidate_name": candidate_name,
-            "email": email,
-            "phone_number": phone_number,
-            "scores": {
-                "relevance_score": relevance_score,
-                "ats_score": ats_score,
-                "readability_score": readability_score,
-            },
-            "excerpt": extracted_text[:500],
-        }
-
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Failed to store resume score: {str(e)}")
 
+    # 7) Build response compatible with your UI
+    response = {
+        "id": new_id,
+        "filename": file.filename,
+        "scores": {
+            "relevance_score": relevance_score,
+            "ats_score": ats_score,
+            "readability_score": readability_score
+        },
+        "excerpt": resume_text[:1200],  # small excerpt for UI preview
+        "feedback": feedback,
+        "jd_id": jd_id,
+        "jd_title": jd.job_title,
+    }
 
-# 🔹 GET /resumes/scores — Fetch all resume records for dashboard
-@router.get("/scores")
-async def get_all_resume_scores(db: AsyncSession = Depends(get_db)):
-    """
-    Returns all resume scores from the database.
-    """
-    result = await db.execute(select(ResumeScore))
-    rows = result.scalars().all()
-
-    return [
-        {
-            "candidate_name": r.candidate_name,
-            "filename": r.filename,
-            "relevance_score": r.relevance_score,
-            "ats_score": r.ats_score,
-            "readability_score": r.readability_score,
-            "email": r.email,
-            "phone_number": r.phone_number,
-            "created_at": r.created_at,
-        }
-        for r in rows
-    ]
+    return JSONResponse(content=response, status_code=200) 

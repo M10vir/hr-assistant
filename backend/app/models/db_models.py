@@ -18,7 +18,8 @@ class ResumeScore(Base):
     email = Column(String, nullable=True)
     phone_number = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
-
+    # ✅ NEW: keep in sync with DB column
+    resume_text = Column(Text, nullable=True)
 
 # ✅ InterviewSubmission Model for persistent interview storage
 class InterviewSubmission(Base):
@@ -31,7 +32,7 @@ class InterviewSubmission(Base):
     job_title = Column(String, nullable=False)
     answers = Column(JSONB)
     feedback = Column(JSONB, nullable=True)
-    grand_score_percent = Column(Float, nullable=True)  # ✅ Must exist
+    grand_score_percent = Column(Float, nullable=True)
     submitted_at = Column(DateTime, default=datetime.utcnow)
 
 # JobDescription Model
@@ -41,4 +42,4 @@ class JobDescription(Base):
     id = Column(Integer, primary_key=True, index=True)
     job_title = Column(String, nullable=False)
     description = Column(Text, nullable=False)
-    uploaded_at = Column(DateTime, default=datetime.utcnow)
+    uploaded_at = Column(DateTime, default=datetime.utcnow) 
