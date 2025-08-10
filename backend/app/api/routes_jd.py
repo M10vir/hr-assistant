@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.responses import JSONResponse
 from app.db.database import get_db
 from app.models.db_models import JobDescription
-from sqlalchemy import insert
+from sqlalchemy import insert, select
 import os, textract
 from datetime import datetime
 
@@ -39,3 +39,34 @@ async def upload_and_store_jd(file: UploadFile = File(...), db: AsyncSession = D
         return JSONResponse(content={"message": "✅ JD uploaded and stored successfully", "job_title": job_title})
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database insert failed: {str(e)}")
+
+
+@router.get("/list")
+async def list_jds(db: AsyncSession = Depends(get_db)):
+    try:
+        result = await db.execute(select(JobDescription.id, JobDescription.job_title))
+        jds = [{"id": row.id, "job_title": row.job_title} for row in result.all()]
+        return jds
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch job descriptions: {str(e)}")
+
+
+@router.get("/{jd_id}")
+async def get_jd_by_id(jd_id: int, db: AsyncSession = Depends(get_db)):
+    try:
+        result = await db.execute(
+            select(JobDescription.id, JobDescription.job_title, JobDescription.description)
+            .where(JobDescription.id == jd_id)
+        )
+        jd = result.first()
+        if not jd:
+            raise HTTPException(status_code=404, detail="Job Description not found")
+        return {
+            "id": jd.id,
+            "job_title": jd.job_title,
+            "description": jd.description
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch job description: {str(e)}") 

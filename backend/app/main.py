@@ -9,6 +9,7 @@ from app.api.routes_screening import router as screening_router
 from app.api.routes_recommendation import router as recommendation_router
 from app.api.routes_assessment import router as assessment_router
 from app.api.routes_jd import router as jd_router
+from app.api.routes_matching import router as matching_router
 
 app = FastAPI(
     title="HR Recruitment Assistant",
@@ -31,6 +32,7 @@ app.include_router(screening_router, prefix="/screening", tags=["Interview Analy
 app.include_router(recommendation_router)  # Already includes /recommend prefix in its definition
 app.include_router(assessment_router, prefix="/interview", tags=["Assessment Interview"])
 app.include_router(jd_router, prefix="/jd", tags=["Job Description Ingestion"])
+app.include_router(matching_router, prefix="/match", tags=["Resume-JD Matching"])
 
 # Root endpoint
 @app.get("/")
