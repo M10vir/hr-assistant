@@ -6,13 +6,27 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import insert
 from sqlalchemy.future import select
 from datetime import datetime
-import os, textract
+import os
 
 from app.db.database import get_db
 from app.models.db_models import ResumeScore, JobDescription
 from app.services.resume_matcher import get_jd_resume_match_score
-# If you have existing scorers, import them here
-# from app.services.resume_scorer import score_ats_readability
+from app.utils.email_notify import (
+    send_hr_high_match_alert,
+    send_candidate_invite,
+)
+
+# ✅ Hardened extractors
+from app.utils.extract_text import extract_text_from_file
+from app.utils.extract_name import extract_candidate_details
+
+# ✅ Real scorers (JD‑aware ATS, robust readability, deterministic relevance, canonicalization)
+from app.utils.score_resume import (
+    canonicalize_text,            # ← NEW: format-agnostic normalization
+    compute_ats_score,
+    compute_readability_score,
+    compute_relevance_score,      # deterministic component for hybrid
+)
 
 router = APIRouter()
 
@@ -23,82 +37,122 @@ async def score_resume_against_jd(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Upload a resume file, parse text, fetch JD by jd_id, and compute relevance score via GPT.
-    Stores to resume_scores (including resume_text). Returns scores for UI.
+    Upload a resume file, extract + canonicalize text (.pdf/.docx/.doc),
+    fetch JD by jd_id (also canonicalized), compute HYBRID relevance (70% GPT + 30% deterministic),
+    compute ATS/Readability, store in DB, and trigger emails when relevance >= 90.
     """
     # 1) Fetch JD
-    jd_row = await db.execute(
-        select(JobDescription).where(JobDescription.id == jd_id)
-    )
+    jd_row = await db.execute(select(JobDescription).where(JobDescription.id == jd_id))
     jd = jd_row.scalar_one_or_none()
     if not jd:
         raise HTTPException(status_code=404, detail="Job Description not found for given jd_id.")
 
-    # 2) Persist file temporarily and extract text
+    # 2) Read upload bytes and extract text (robust), then canonicalize
     try:
-        contents = await file.read()
-        temp_path = f"/tmp/{file.filename}"
-        with open(temp_path, "wb") as f:
-            f.write(contents)
-        resume_text = textract.process(temp_path).decode("utf-8", errors="ignore").strip()
-        try:
-            os.remove(temp_path)
-        except Exception:
-            pass
+        file_bytes = await file.read()
+        raw_resume_text = extract_text_from_file(file.filename, file_bytes)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Resume text extraction failed: {str(e)}")
 
+    resume_text = canonicalize_text(raw_resume_text)
     if not resume_text:
         raise HTTPException(status_code=400, detail="No text could be extracted from the resume.")
 
-    # 3) Compute relevance score via GPT (JD vs resume_text)
-    match_result = get_jd_resume_match_score(resume_text=resume_text, jd_text=jd.description)
-    relevance_score = int(match_result.get("match_score", 0))
+    # Canonicalize JD as well for parity (important for PDF vs DOCX consistency)
+    jd_text = canonicalize_text(jd.description or "")
+
+    # 3) Relevance: GPT + deterministic hybrid (both get canonicalized text)
+    match_result = get_jd_resume_match_score(resume_text=resume_text, jd_text=jd_text)
+    gpt_rel = float(match_result.get("match_score", 0) or 0)
     feedback = match_result.get("feedback", "")
 
-    # 4) (Optional) ATS & readability scoring via your existing logic
-    # ats_score, readability_score = score_ats_readability(resume_text)
-    # For now, if you don't have a function handy, default to 0 or keep existing calculations elsewhere:
-    ats_score = 0
-    readability_score = 0
+    det_rel = float(compute_relevance_score(resume_text, jd_text))
 
-    # 5) Extract minimal candidate info if you already do this elsewhere, otherwise leave blank
-    candidate_name = ""
-    email = ""
-    phone_number = ""
+    use_hybrid = os.getenv("USE_HYBRID_RELEVANCE", "true").lower() not in {"0", "false", "no"}
+    if use_hybrid:
+        relevance_score = int(round(0.70 * gpt_rel + 0.30 * det_rel))
+    else:
+        relevance_score = int(round(gpt_rel))
 
-    # 6) Insert into resume_scores (including resume_text) – always store; UI will filter top 20 ≥90 later
+    # If GPT failed silently (0 + no feedback), hard‑fallback to deterministic
+    if relevance_score == 0 and not feedback:
+        relevance_score = int(round(det_rel))
+        feedback = "Deterministic relevance used due to GPT unavailability."
+
+    # 4) ATS & Readability (on canonical resume text; ATS is JD‑aware)
+    ats_score = int(round(compute_ats_score(resume_text, jd_text)))
+    readability_score = int(round(compute_readability_score(resume_text)))
+
+    # 5) Extract candidate details (OpenAI v1 if configured; else regex fallback)
+    candidate_name, email, phone_number = extract_candidate_details(resume_text)
+    candidate_name = candidate_name or ""
+    email = email or ""
+    phone_number = phone_number or ""
+
+    # 6) Insert into resume_scores (store CANONICAL resume_text for consistency/searchability)
     try:
-        stmt = insert(ResumeScore).values(
-            candidate_name=candidate_name,
-            filename=file.filename,
-            relevance_score=relevance_score,
-            ats_score=ats_score,
-            readability_score=readability_score,
-            created_at=datetime.utcnow(),
-            email=email,
-            phone_number=phone_number,
-            resume_text=resume_text,   # <-- new column we added
-        ).returning(ResumeScore.id)
+        stmt = (
+            insert(ResumeScore)
+            .values(
+                candidate_name=candidate_name,
+                filename=file.filename,
+                relevance_score=relevance_score,
+                ats_score=ats_score,
+                readability_score=readability_score,
+                created_at=datetime.utcnow(),
+                email=email,
+                phone_number=phone_number,
+                resume_text=resume_text,   # ← canonicalized text
+            )
+            .returning(ResumeScore.id)
+        )
         res = await db.execute(stmt)
         new_id = res.scalar_one()
         await db.commit()
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to store resume score: {str(e)}")
 
-    # 7) Build response compatible with your UI
-    response = {
-        "id": new_id,
-        "filename": file.filename,
-        "scores": {
-            "relevance_score": relevance_score,
-            "ats_score": ats_score,
-            "readability_score": readability_score
-        },
-        "excerpt": resume_text[:1200],  # small excerpt for UI preview
-        "feedback": feedback,
-        "jd_id": jd_id,
-        "jd_title": jd.job_title,
-    }
+    # 7) Email triggers if relevance_score >= 90 (non‑blocking)
+    try:
+        if relevance_score >= 90:
+            frontend_base = os.getenv("FRONTEND_BASE_URL", "http://localhost:5173")
+            assessment_url = f"{frontend_base}/?start=assessment&resume_id={new_id}"
 
-    return JSONResponse(content=response, status_code=200) 
+            send_hr_high_match_alert(
+                candidate_name=candidate_name or "",
+                filename=file.filename,
+                relevance_score=relevance_score,
+                ats_score=ats_score,
+                readability_score=readability_score,
+                job_title=jd.job_title,
+                email=email or "",
+                phone_number=phone_number or "",
+                feedback_short=(feedback[:140] + "…") if feedback else "",
+            )
+
+            if email:
+                send_candidate_invite(
+                    candidate_email=email,
+                    job_title=jd.job_title,
+                    assessment_url=assessment_url,
+                )
+    except Exception as e:
+        print(f"[email triggers] non-blocking error: {e}")
+
+    # 8) Response for UI
+    return JSONResponse(
+        content={
+            "id": new_id,
+            "filename": file.filename,
+            "scores": {
+                "relevance_score": relevance_score,
+                "ats_score": ats_score,
+                "readability_score": readability_score,
+            },
+            "excerpt": resume_text[:1200],
+            "feedback": feedback,
+            "jd_id": jd_id,
+            "jd_title": jd.job_title,
+        },
+        status_code=200,
+    ) 
