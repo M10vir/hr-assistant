@@ -5,6 +5,10 @@ from sqlalchemy.dialects.postgresql import JSONB
 from app.db.database import Base
 from datetime import datetime
 
+# inside class ResumeScore(Base):
+file_path = Column(Text, nullable=True)
+mime_type = Column(String, nullable=True)
+
 # ResumeScore Model
 class ResumeScore(Base):
     __tablename__ = "resume_scores"
@@ -18,10 +22,10 @@ class ResumeScore(Base):
     email = Column(String, nullable=True)
     phone_number = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
-    # ✅ NEW: keep in sync with DB column
+    # NEW: keep in sync with DB column
     resume_text = Column(Text, nullable=True)
 
-# ✅ InterviewSubmission Model for persistent interview storage
+# InterviewSubmission Model for persistent interview storage
 class InterviewSubmission(Base):
     __tablename__ = "interview_submissions"
 

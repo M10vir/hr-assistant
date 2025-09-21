@@ -133,7 +133,6 @@ SQLAlchemy==2.0.41
 srsly==2.5.1
 starlette==0.46.2
 sympy==1.14.0
-textract==1.6.5
 textstat==0.7.7
 thinc==8.3.6
 threadpoolctl==3.6.0
