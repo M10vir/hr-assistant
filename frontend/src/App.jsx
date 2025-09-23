@@ -1,30 +1,44 @@
 // frontend/src/App.jsx
 import React from 'react';
-import { Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
-// Import components
-import Home from './components/Home';
-import JDUploader from './components/JDUploader';
-import ResumeUploader from './components/ResumeUploader';
-import ResumeScoreDashboard from './components/ResumeScoreDashboard';
-import ResumeRecommendation from './components/ResumeRecommendation';
-import InterviewUploader from './components/InterviewUploader'; // ✅ fixed import
-import InterviewAssessmentForm from './components/InterviewAssessmentForm';
-import InterviewAssessmentDashboard from './components/InterviewAssessmentDashboard';
+// Home + features (all live under components/)
+import Home from './components/Home.jsx';
+import JDUploader from './components/JDUploader.jsx';
+import ResumeUploader from './components/ResumeUploader.jsx';
+import ResumeScoreDashboard from './components/ResumeScoreDashboard.jsx';
+import ResumeRecommendation from './components/ResumeRecommendation.jsx';
+import InterviewUploader from './components/InterviewUploader.jsx';
+import InterviewAssessmentForm from './components/InterviewAssessmentForm.jsx';
+import InterviewAssessmentDashboard from './components/InterviewAssessmentDashboard.jsx';
+import SupportHelpline from './components/SupportHelpline.jsx'; // NEW
 
-const App = () => {
+import './App.css';
+
+export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/jd-upload" element={<JDUploader />} />
-      <Route path="/resume-upload" element={<ResumeUploader />} />
-      <Route path="/resume-dashboard" element={<ResumeScoreDashboard />} />
-      <Route path="/recommendations" element={<ResumeRecommendation />} />
-      <Route path="/interview" element={<InterviewUploader />} /> {/* ✅ fixed route */}
-      <Route path="/interview-form" element={<InterviewAssessmentForm />} />
-      <Route path="/assessment-dashboard" element={<InterviewAssessmentDashboard />} />
-    </Routes>
-  );
-};
+    <BrowserRouter>
+      <Routes>
+        {/* Landing */}
+        <Route path="/" element={<Home />} />
 
-export default App;
+        {/* Core flows */}
+        <Route path="/upload-jd" element={<JDUploader />} />
+        <Route path="/upload-resume" element={<ResumeUploader />} />
+        <Route path="/resume-dashboard" element={<ResumeScoreDashboard />} />
+        <Route path="/recommendations" element={<ResumeRecommendation />} />
+
+        {/* Interview */}
+        <Route path="/interview-analysis" element={<InterviewUploader />} />
+        <Route path="/interview-form" element={<InterviewAssessmentForm />} />
+        <Route path="/assessment-dashboard" element={<InterviewAssessmentDashboard />} />
+
+        {/* Support */}
+        <Route path="/support" element={<SupportHelpline />} />
+
+        {/* Fallback -> Home */}
+        <Route path="*" element={<Home />} />
+      </Routes>
+    </BrowserRouter>
+  );
+} 

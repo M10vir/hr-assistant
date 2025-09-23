@@ -1,136 +1,270 @@
-import React, { useState } from 'react';
-import ResumeUploader from './ResumeUploader';
-import JDUploader from './JDUploader';
-import ResumeScoreDashboard from './ResumeScoreDashboard';
-import ResumeRecommendation from './ResumeRecommendation';
-import InterviewUploader from './InterviewUploader';
-import InterviewAssessmentForm from './InterviewAssessmentForm';
-import InterviewAssessmentDashboard from './InterviewAssessmentDashboard';
-
-const ModalWrapper = ({ children, onClose }) => (
-  <div style={{
-    position: 'fixed',
-    top: 0, left: 0, right: 0, bottom: 0,
-    background: 'rgba(0,0,0,0.75)',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000
-  }}>
-    <div style={{
-      background: '#161616',
-      color: '#fff',
-      padding: '20px',
-      borderRadius: '10px',
-      maxWidth: '1500px',
-      width: '90%',
-      border: '1px solid #00ffe7',
-      boxShadow: '0 0 10px #00ffe7',
-      maxHeight: '75vh',
-      overflowY: 'auto'
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
-        <button
-          onClick={onClose}
-          style={{
-            backgroundColor: '#2c2c2c',
-            color: '#fff',
-            border: '1px solid #00ffe7',
-            padding: '6px 10px',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontWeight: 'bold',
-            fontSize: '0.9rem',
-            transition: 'background 0.3s ease'
-          }}
-          onMouseEnter={e => e.currentTarget.style.backgroundColor = '#00ffe7'}
-          onMouseLeave={e => e.currentTarget.style.backgroundColor = '#2c2c2c'}
-        >
-          ✖ CLOSE
-        </button>
-      </div>
-      {children}
-    </div>
-  </div>
-);
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const Home = () => {
-  const [activeModal, setActiveModal] = useState(null);
+  const nav = useNavigate();
 
-  const cards = [
-    { title: '📁 Upload JD', desc: 'Store job descriptions for AI matching.', key: 'jd' },
-    { title: '📄 Upload Resume', desc: 'AI-powered resume scoring & suggestions.', key: 'resume' },
-    { title: '📊 Resume Dashboard', desc: 'ATS, readability, relevance visualized.', key: 'resumeDashboard' },
-    { title: '🤖 AI Recommendations', desc: 'Smart candidate suggestions via LLM.', key: 'aiRecommendations' },
-    { title: '🎙️ Interview Analysis', desc: 'Upload audio for GPT feedback.', key: 'interviewAnalysis' },
-    { title: '📝 Interview Form', desc: 'Collect structured responses live.', key: 'interviewForm' },
-    { title: '📈 Assessment Dashboard', desc: 'Score candidates on key metrics.', key: 'assessmentDashboard' }
-  ];
+  // Live ribbon stats
+  const [jdCount, setJdCount] = useState(0);
+  const [resumeCount, setResumeCount] = useState(0);
+  const [topCount, setTopCount] = useState(0);
+  const [loading, setLoading] = useState(true);
 
-  const renderModal = () => {
-    switch (activeModal) {
-      case 'jd': return <ModalWrapper onClose={() => setActiveModal(null)}><JDUploader /></ModalWrapper>;
-      case 'resume': return <ModalWrapper onClose={() => setActiveModal(null)}><ResumeUploader /></ModalWrapper>;
-      case 'resumeDashboard': return <ModalWrapper onClose={() => setActiveModal(null)}><ResumeScoreDashboard /></ModalWrapper>;
-      case 'aiRecommendations': return <ModalWrapper onClose={() => setActiveModal(null)}><ResumeRecommendation /></ModalWrapper>;
-      case 'interviewAnalysis': return <ModalWrapper onClose={() => setActiveModal(null)}><InterviewUploader /></ModalWrapper>;
-      case 'interviewForm': return <ModalWrapper onClose={() => setActiveModal(null)}><InterviewAssessmentForm /></ModalWrapper>;
-      case 'assessmentDashboard': return <ModalWrapper onClose={() => setActiveModal(null)}><InterviewAssessmentDashboard /></ModalWrapper>;
-      default: return null;
-    }
-  };
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const [jdsRes, recentRes, topRes] = await Promise.all([
+          fetch('http://localhost:8000/jd/list'),
+          fetch('http://localhost:8000/resumes/scores?limit=500'),
+          fetch('http://localhost:8000/resumes/top?limit=20'),
+        ]);
+
+        const [jds, recent, top] = await Promise.all([
+          jdsRes.ok ? jdsRes.json() : [],
+          recentRes.ok ? recentRes.json() : [],
+          topRes.ok ? topRes.json() : [],
+        ]);
+
+        if (!alive) return;
+        setJdCount(Array.isArray(jds) ? jds.length : 0);
+        setResumeCount(Array.isArray(recent) ? recent.length : 0);
+        setTopCount(Array.isArray(top) ? top.length : 0);
+      } catch {
+        if (!alive) return;
+        setJdCount(0);
+        setResumeCount(0);
+        setTopCount(0);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+    return () => { alive = false; };
+  }, []);
 
   return (
-    <div style={{
-      background: 'linear-gradient(135deg, #0f2027, #203a43, #2c5364)',
-      color: '#fff',
-      minHeight: '100vh',
-      padding: '50px 20px',
-      fontFamily: 'sans-serif'
-    }}>
-      <header style={{
-        textAlign: 'center',
-        marginBottom: '40px'
-      }}>
-        <h1 style={{ fontSize: '2.2rem', color: '#00ffe7' }}>🚀 AI-Powered HR Recruitment Assistant</h1>
-        <p style={{ color: '#ccc', maxWidth: '700px', margin: '10px auto' }}>
-          Automate screening, scoring, and interview analysis with advanced AI tools built for the modern recruiter.
-        </p>
-      </header>
+    <div style={pageWrap}>
+      {/* Hero */}
+      <h1 style={title}>AI-Powered HR Recruitment Assistant</h1>
+      <p style={subtitle}>
+        Automate screening, scoring, recommendations, and interview analysis—built for the modern recruiter.
+      </p>
 
-      <section style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-        gap: '25px',
-        maxWidth: '1200px',
-        margin: '0 auto'
-      }}>
-        {cards.map(({ title, desc, key }) => (
-          <div
-            key={key}
-            onClick={() => setActiveModal(key)}
-            style={{
-              background: '#1e1e1e',
-              borderRadius: '12px',
-              padding: '24px',
-              cursor: 'pointer',
-              border: '1px solid #00ffe7',
-              boxShadow: '0 0 10px #00ffe7',
-              transition: 'transform 0.2s ease-in-out'
-            }}
-            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
-            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1.0)'}
-          >
-            <h3 style={{ color: '#00ffe7', marginBottom: '12px' }}>{title}</h3>
-            <p style={{ color: '#aaa', fontSize: '0.95rem' }}>{desc}</p>
-          </div>
-        ))}
-      </section>
+      {/* Ribbon: live stats */}
+      <div style={ribbonWrap}>
+        <RibbonItem value={loading ? '—' : jdCount} label="Job Descriptions" />
+        <RibbonItem value={loading ? '—' : resumeCount} label="Resumes Processed" />
+        <RibbonItem value={loading ? '—' : topCount} label={`Top Candidates (${topCount})`} />
+      </div>
 
-      {renderModal()}
+      {/* Quick action chips */}
+      <div style={chipsWrap}>
+        <Chip onClick={() => nav('/upload-jd')}>+ New JD</Chip>
+        <Chip onClick={() => nav('/upload-resume')}>Score a Resume</Chip>
+        <Chip onClick={() => nav('/resume-dashboard')}>Open Resume Dashboard</Chip>
+        <Chip onClick={() => nav('/recommendations')}>AI Recommendations</Chip>
+      </div>
+
+      {/* Card grid — all on one page (2 columns on desktop, 1 on narrow) */}
+      <div style={grid}>
+        <Card
+          icon="📄"
+          title="Upload JD"
+          desc="Store job descriptions for AI matching."
+          onClick={() => nav('/upload-jd')}
+        />
+        <Card
+          icon="📬"
+          title="Upload Resume"
+          desc="AI-powered resume scoring & suggestions."
+          onClick={() => nav('/upload-resume')}
+        />
+        <Card
+          icon="📊"
+          title="Resume Dashboard"
+          desc="ATS, readability, relevance visualized."
+          onClick={() => nav('/resume-dashboard')}
+        />
+        <Card
+          icon="🤖"
+          title="AI Recommendations"
+          desc="Top-fit candidates per JD, with saveable snapshots."
+          onClick={() => nav('/recommendations')}
+        />
+        <Card
+          icon="🎙️"
+          title="Interview Analysis"
+          desc="Upload audio for GPT feedback."
+          onClick={() => nav('/interview-analysis')}
+        />
+        <Card
+          icon="📝"
+          title="Interview Form"
+          desc="Collect structured responses live."
+          onClick={() => nav('/interview-form')}
+        />
+        <Card
+          icon="📈"
+          title="Assessment Dashboard"
+          desc="Score candidates on key metrics."
+          onClick={() => nav('/assessment-dashboard')}
+        />
+        <Card
+          icon="🆘"
+          title="Hotline Support / Contact us"
+          desc="Get help, report issues, or request features."
+          onClick={() =>
+            window.open(
+              'mailto:mohammadtanvirit@outlook.com?subject=HR%20Assistant%20Support&body=Please%20describe%20your%20issue%20or%20request…',
+              '_blank'
+            )
+          }
+        />
+      </div>
     </div>
   );
 };
 
-export default Home;
- 
+/* ---------- Small components ---------- */
+const RibbonItem = ({ value, label }) => (
+  <div style={ribbonItem}>
+    <div style={ribbonValue}>{value}</div>
+    <div style={ribbonLabel}>{label}</div>
+  </div>
+);
+
+const Chip = ({ children, onClick }) => (
+  <button onClick={onClick} style={chipStyle}>{children}</button>
+);
+
+const Card = ({ icon, title, desc, onClick }) => (
+  <button onClick={onClick} style={card}>
+    <div style={cardIcon}>{icon}</div>
+    <div>
+      <div style={cardTitle}>{title}</div>
+      <div style={cardDesc}>{desc}</div>
+    </div>
+  </button>
+);
+
+/* ---------- Styles (neon, compact, single page) ---------- */
+const pageWrap = {
+  maxWidth: 1100,
+  margin: '0 auto',
+  padding: '2.25rem 1rem 3rem',
+  color: '#fff',
+  fontFamily: 'Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif',
+};
+
+const title = {
+  textAlign: 'center',
+  fontSize: '2.2rem',
+  fontWeight: 800,
+  marginBottom: '0.5rem',
+};
+
+const subtitle = {
+  textAlign: 'center',
+  color: '#cfcfcf',
+  fontSize: '1rem',
+  marginBottom: '1.25rem',
+};
+
+/* Ribbon */
+const ribbonWrap = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(3, 1fr)',
+  gap: '0.75rem',
+  background: 'transparent',
+  padding: '0.25rem',
+  margin: '0 auto 0.75rem',
+  borderRadius: 12,
+  boxShadow: '0 0 10px #00ffe7',
+  border: '1px solid #00ffe7',
+};
+
+const ribbonItem = {
+  background: '#112021',
+  borderRadius: 10,
+  padding: '0.7rem 0.5rem',
+  textAlign: 'center',
+};
+
+const ribbonValue = {
+  fontSize: '1.35rem',
+  fontWeight: 800,
+  color: '#00ffe7',
+  lineHeight: 1.1,
+};
+
+const ribbonLabel = {
+  fontSize: '0.8rem',
+  color: '#c8eaea',
+  marginTop: 2,
+};
+
+/* Chips */
+const chipsWrap = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: '0.5rem',
+  justifyContent: 'center',
+  marginBottom: '1.25rem',
+};
+
+const chipStyle = {
+  background: '#122627',
+  border: '1px solid #00ffe7',
+  color: '#dff',
+  borderRadius: 999,
+  fontSize: '0.9rem',
+  padding: '0.45rem 0.9rem',
+  cursor: 'pointer',
+  boxShadow: '0 0 8px rgba(0,255,231,0.35)',
+};
+
+/* Cards grid */
+const grid = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(2, 1fr)', // 2 columns desktop
+  gap: '1rem',
+};
+
+const card = {
+  display: 'flex',
+  gap: '0.9rem',
+  alignItems: 'flex-start',
+  textAlign: 'left',
+  padding: '1.1rem 1rem',
+  background: '#0e1516',
+  border: '1px solid #00ffe7',
+  borderRadius: 12,
+  boxShadow: '0 0 12px rgba(0,255,231,0.35)',
+  cursor: 'pointer',
+};
+
+const cardIcon = {
+  fontSize: '1.7rem',
+  marginTop: 2,
+};
+
+const cardTitle = {
+  color: '#00ffe7',
+  fontWeight: 700,
+  fontSize: '1.05rem',
+  marginBottom: 6,
+};
+
+const cardDesc = {
+  color: '#cfcfcf',
+  fontSize: '0.93rem',
+  lineHeight: 1.35,
+};
+
+/* Responsive: keep it on one page but readable */
+const media = window.matchMedia?.('(max-width: 780px)');
+if (media && media.matches) {
+  grid.gridTemplateColumns = '1fr'; // stack cards on narrow screens
+}
+
+export default Home; 
